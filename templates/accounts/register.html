@@ -1,8 +1,27 @@
 {% block content %}
-  <h2>Register</h2>
-  <form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Register</button>
-  </form>
+<h2>Register</h2>
+<form method="post" action ="{% url 'accounts:register' %}" id ="register-form">
+  {% csrf_token %}
+  <div id="username-field">
+    <label for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+    {{ form.username }}
+  </div>
+  <div id="password1-field">
+    <label for="{{ form.password1.id_for_label }}">{{ form.password1.label }}</label>
+    {{ form.password1 }}
+  </div>
+  <div id="password2-field">
+    <label for="{{ form.password2.id_for_label }}">{{ form.password2.label }}</label>
+    {{ form.password2 }}
+  </div>
+  <div id="email-field">
+    <label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+    {{ form.email }}
+  </div>
+  <div id="account-type-field">
+    <label for="{{ form.account_type.id_for_label }}">{{ form.account_type.label }}</label>
+    {{ form.account_type }}
+  </div>
+  <button type="submit">Register</button>
+</form>
 {% endblock %}

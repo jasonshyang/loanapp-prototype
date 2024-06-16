@@ -1,14 +1,17 @@
 from django.forms import ValidationError
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponseNotFound
 from django.shortcuts import render, get_object_or_404
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import authenticate, login
+from django.contrib.auth import views as auth_views
+from django.views import generic
 
 # Create your views here.
 from .models import Account
-from .forms import AccountCreationForm, BorrowerInfoForm, LenderInfoForm
-from django.views import generic
+from .forms import AccountCreationForm
 from .utils import get_risk_score, get_risk_level
 
 class IndexView(generic.ListView):
@@ -30,71 +33,38 @@ class CreateView(generic.CreateView):
 
     def form_valid(self, form):
         if form.is_valid():
-            account_type = form.cleaned_data.get('account_type')
-            if account_type not in ['BORROWER', 'LENDER']:
-                raise ValidationError("Invalid account type. Account must be either a borrower or a lender.")
             account = form.save(commit=False)
-            account.account_state = "active"
-            account.save()
-            self.request.session['account_type'] = account.account_type
-            self.request.session['id'] = account.id
-
             if account.account_type == 'BORROWER':
-                return HttpResponseRedirect(reverse('accounts:register/borrower'))
+                account.risk_score = get_risk_score()
+                account.risk_level = get_risk_level(account.risk_score)                
             elif account.account_type == 'LENDER':
-                return HttpResponseRedirect(reverse('accounts:register/lender'))
-            
-        return super().form_valid(form)
-
-class BorrowerView(generic.CreateView):
-    template_name = "accounts/register.html"
-    form_class = BorrowerInfoForm
-    success_url = "/accounts/"
-
-    @method_decorator(csrf_protect)
-    def dispatch(self, request, *args, **kwargs):
-        if 'account_type' not in request.session:
-            return HttpResponseRedirect(reverse('accounts:register'))
-        account = Account.objects.get(id=request.session['id'])
-        if request.session['account_type'] != account.account_type:
-            return HttpResponseRedirect(reverse('accounts:register'))
-        return super().dispatch(request, *args, **kwargs)
-    
-    
-    def form_valid(self, form):
-        if form.is_valid():
-            borrower = form.save(commit=False)
-            borrower.account = Account.objects.get(id=self.request.session['id'])
-            borrower.risk_score = get_risk_score()
-            borrower.risk_level = get_risk_level(borrower.risk_score)
-            borrower.save()
+                pass
+            else:
+                raise ValidationError("Invalid account type. Account must be either a borrower or a lender.")
+            account.save()
         return super().form_valid(form)
 
 
-class LenderView(generic.CreateView):
-    template_name = "accounts/register.html"
-    form_class = LenderInfoForm
-    success_url = "/accounts/"
-
-    @method_decorator(csrf_protect)
-    def dispatch(self, request, *args, **kwargs):
-        if 'account_type' not in request.session:
-            return HttpResponseRedirect(reverse('accounts:register'))
-        account = Account.objects.get(id=request.session['id'])
-        if request.session['account_type'] != account.account_type:
-            return HttpResponseRedirect(reverse('accounts:register'))
-        return super().dispatch(request, *args, **kwargs)
-    
-    def form_valid(self, form):
-        if form.is_valid():
-            lender = form.save(commit=False)
-            lender.account = Account.objects.get(id=self.request.session['id'])
-            lender.save()
-        return super().form_valid(form)
-
-
+@method_decorator(login_required, name='dispatch')
 class DetailView(generic.DetailView):
     model = Account
     template_name = "accounts/detail.html"
 
-# TODO: Add views for login and continuing the registration process
+
+class AuthView(auth_views.LoginView):
+    template_name = "accounts/login.html"
+    next_page = "/accounts/"
+    
+
+'''
+def user_login(request):
+    username = request.POST("username")
+    password = request.POST("password")
+    account = authenticate(request, username=username, password=password)
+    if account is not None:
+        login(request, account)
+        return HttpResponseRedirect(reverse('accounts:detail', args=(account.id,))) # type: ignore
+    else:
+        return HttpResponseNotFound('Invalid login credentials. Please try again.')
+'''
+# TODO: Add views for login and continuing the registration process, Add views for updating account information, Add views for deleting accounts

@@ -22,3 +22,16 @@ ACCOUNT_STATE = [
     ('SUSPENDED', 'Suspended'),
     ('CLOSED', 'Closed'),
 ]
+
+MONEY_REQUEST_STATUS = [
+    ('OPEN', 'Open'),
+    ('ACCEPTED', 'Accepted'),
+    ('FULFILLED', 'Fulfilled'),
+    ('CANCELLED', 'Cancelled'),
+]
+
+MONEY_REQUEST_TYPE = [
+    ('INSTALLMENT', 'Installment'),
+    ('MINPAY', 'Minimum Payment'),
+    ('INTONLY', 'Interest Only'),
+]
